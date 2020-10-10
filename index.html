@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cpage</title>
+</head>
+<script src="https://unpkg.com/vue@next"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.1/socket.io.js"
+    integrity="sha512-AcZyhRP/tbAEsXCCGlziPun5iFvcSUpEz2jKkx0blkYKbxU81F+iq8FURwPn1sYFeksJ+sDDrI5XujsqSobWdQ=="
+    crossorigin="anonymous"></script>
+
+<body>
+    <div id="app">
+        <div v-if="menu" class="menu">
+            <input type="text" placeholder="Id page to join" v-model="searchId">
+            <button @click="joinPage">Join Page</button>
+            <button @click="createNewPage">Create new page</button>
+        </div>
+        <div v-else class="text">
+            <textarea id="editor" v-model="text"></textarea>
+        </div>
+    </div>
+
+</body>
+<script>
+    const API_URL = 'http://localhost:8080'
+
+    const App = {
+        data() {
+            return {
+                id: window.location.pathname,
+                menu: true,
+                searchId: '',
+                socket: null,
+                text: '',
+                sendSocket: false
+            }
+        },
+        mounted() {
+            this.menu = this.id == '/'
+            if (!this.menu) {
+                this.socket = io()
+                this.socket.emit('joinRoom', this.id.split('/')[1])
+                this.socket.on('updateText', data => {
+                    if (!this.sendSocket) {
+                        this.text = data
+                    }
+                    this.sendSocket = false
+                })
+            }
+        },
+        methods: {
+            createNewPage() {
+                fetch(API_URL + '/api/new')
+                    .then(res => res.json())
+                    .then(data => {
+                        window.location = data.id
+                    });
+            },
+            joinPage() {
+                if (this.searchId === '')
+                    return
+                window.location = this.searchId
+            }
+        },
+        watch: {
+            text(newText, oldText) {
+                this.sendSocket = true
+                this.socket.emit('text', JSON.stringify({ roomId: this.id.split('/')[1], text: this.text }))
+            }
+        }
+    }
+
+    Vue.createApp(App).mount('#app')
+
+</script>
+<style>
+    html,
+    body {
+        margin: 0;
+        padding: 0;
+    }
+
+    #app {
+        display: flex;
+        justify-content: center;
+        height: 100vh;
+    }
+
+    .menu {
+        display: flex;
+        flex-direction: column;
+        width: 30%;
+        margin-top: 300px;
+    }
+
+    .text {
+        width: 65%;
+        margin: 10px;
+    }
+
+    #editor {
+        width: 100%;
+        height: 80%;
+    }
+</style>
+
+</html>
