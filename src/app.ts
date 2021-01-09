@@ -47,9 +47,9 @@ io.on('connection', (socket) => {
     socket.on('text', (res) => {
         const data: any = JSON.parse(res)
         DATA[data.roomId].clients.forEach(client => {
-            // if (client.id != socket.id) {
+            if (client.id != socket.id) {
                 client.emit('updateText', data.text)
-            // }
+            }
         })
     })
 
